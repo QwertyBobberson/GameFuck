@@ -15,8 +15,8 @@
 #include <glm/glm.hpp>
 #include <array>
 
-const uint32_t WIDTH = 800;
-const uint32_t HEIGHT = 600;
+const uint32_t WIDTH = 1000;
+const uint32_t HEIGHT = 1000;
 
 const int MAX_FRAMES_IN_FLIGHT = 2;
 
@@ -63,16 +63,15 @@ struct Vertex
 	}
 };
 
-const std::vector<Vertex> verts = 
-{
-	{{ 0.0f, -0.1f}, {0.0f, 0.0f, 1.0f}},
-	{{ 0.1f,  0.1f}, {0.0f, 0.0f, 1.0f}},
-	{{-0.1f,  0.1f}, {0.0f, 0.0f, 1.0f}},
-	{{-0.7f, -0.7f}, {0.0f, 0.0f, 1.0f}},
-	{{-0.6f,  -0.5f}, {0.0f, 0.0f, 1.0f}},
-	{{-0.8f,  -0.5f}, {0.0f, 0.0f, 1.0f}}
-	
-};
+std::vector<Vertex> verts;// = 
+// {
+// 	{{ 0.0f, -0.1f}, {0.0f, 0.0f, 1.0f}},
+// 	{{ 0.1f,  0.1f}, {0.0f, 0.0f, 1.0f}},
+// 	{{-0.1f,  0.1f}, {0.0f, 0.0f, 1.0f}},
+// 	{{-0.7f, -0.7f}, {0.0f, 0.0f, 1.0f}},
+// 	{{-0.6f,  -0.5f}, {0.0f, 0.0f, 1.0f}},
+// 	{{-0.8f,  -0.5f}, {0.0f, 0.0f, 1.0f}}
+// };
 
 VkResult CreateDebugUtilsMessengerEXT(VkInstance instance, const VkDebugUtilsMessengerCreateInfoEXT *pCreateInfo, const VkAllocationCallbacks *pAllocator, VkDebugUtilsMessengerEXT *pDebugMessenger)
 {
@@ -117,8 +116,9 @@ struct SwapChainSupportDetails
 class Application
 {
 public:
-	void Run()
+	void Run(std::vector<Vertex> vertices)
 	{
+		verts = vertices;
 		InitWindow();
 		InitVulkan();
 		MainLoop();
