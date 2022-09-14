@@ -193,7 +193,7 @@ class Application
 				throw std::runtime_error("failed to record command buffer");
 			}
 		}
-		void CreateCommandBuffer()
+		void CreateCommandBuffers()
 		{
 			VkCommandBufferAllocateInfo allocInfo{};
 			allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
@@ -937,7 +937,7 @@ class Application
 			CreateGraphicsPipeline();
 			CreateFramebuffers();
 			CreateCommandPool();
-			CreateCommandBuffer();
+			CreateCommandBuffers();
 			CreateSyncObjects();
 		}
 		void InitWindow()
