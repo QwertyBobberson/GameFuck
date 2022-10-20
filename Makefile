@@ -1,4 +1,4 @@
-CFLAGS=-std=c++17 -O3 -pedantic -Wall -Wextra -j16 -I/home/qwob/Projects/Wheel/Vulkan/stb
+CFLAGS=-std=c++17 -O3 -pedantic -Wall -Wextra -I/home/qwob/Projects/Wheel/Vulkan/stb
 LDFLAGS = -lglfw -lvulkan -ldl -lpthread -lX11 -lXxf86vm -lXrandr -lXi -lpng
 
 Vulkan: *.cpp
