@@ -1,3 +1,4 @@
+#pragma once
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
 #include <vector>
@@ -12,9 +13,13 @@ struct Pipeline
 
     std::vector<VkPipelineShaderStageCreateInfo> shaders;
     VkPipelineVertexInputStateCreateInfo vertexInput;
+    VkPipelineInputAssemblyStateCreateInfo inputAssembly;
     VkPipelineRasterizationStateCreateInfo rasterization;
-    VkPipelineLayout pipelineLayout;
+    VkPipelineLayout pipelineLayout; //Still needs a function
     VkRenderPass renderPass;
+
+    VkViewport viewport;
+    VkRect2D scissor;
 };
 
 VkPipelineShaderStageCreateInfo CreatePipelineShaderInfo(VkShaderStageFlagBits stage, VkShaderModule shader)
@@ -31,21 +36,26 @@ VkPipelineShaderStageCreateInfo CreatePipelineShaderInfo(VkShaderStageFlagBits s
     };
 }
 
-void CreatePipeline(Engine engine, Pipeline pipeline)
+void CreatePipeline(Engine* engine, Pipeline pipeline)
 {
     VkPipelineViewportStateCreateInfo viewportState{};
     viewportState.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
 
     viewportState.viewportCount = 1;
-    viewportState.pViewports = &engine.viewport;
+    viewportState.pViewports = &pipeline.viewport;
     viewportState.scissorCount = 1;
-    viewportState.pScissors = &engine.scissor;
+    viewportState.pScissors = &pipeline.scissor;
+
+
+    VkPipelineColorBlendAttachmentState colorBlendAttachment {};
+    colorBlendAttachment.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
+    colorBlendAttachment.blendEnable = VK_FALSE;
 
     VkPipelineColorBlendStateCreateInfo colorBlend{};
     colorBlend.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
     colorBlend.logicOpEnable = VK_FALSE;
     colorBlend.attachmentCount = 1;
-    colorBlend.pAttachments = &CreateBlendAttachment();
+    colorBlend.pAttachments = &colorBlendAttachment;
 
     VkGraphicsPipelineCreateInfo pipelineInfo {};
     pipelineInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
@@ -61,7 +71,7 @@ void CreatePipeline(Engine engine, Pipeline pipeline)
     pipelineInfo.subpass = 0;
     pipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
 
-    if(vkCreateGraphicsPipelines(engine.device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &pipeline.pipeline) != VK_SUCCESS)
+    if(vkCreateGraphicsPipelines(engine->device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &pipeline.pipeline) != VK_SUCCESS)
     {
         std::cout << "Failed to create a pipeline";
     }
@@ -79,7 +89,7 @@ VkPipelineInputAssemblyStateCreateInfo CreateInputCreateInfo(VkPrimitiveTopology
     };
 }
 
-VkShaderModule CreateShaderModuleFromFile(Engine engine, std::string filename)
+VkShaderModule CreateShaderModuleFromFile(Engine* engine, std::string filename)
 {
     std::ifstream file(filename, std::ios::ate | std::ios::binary);
 
@@ -103,7 +113,7 @@ VkShaderModule CreateShaderModuleFromFile(Engine engine, std::string filename)
     CreateInfo.pCode = reinterpret_cast<const uint32_t *>(buffer.data());
 
     VkShaderModule shaderModule;
-    if (vkCreateShaderModule(engine.device, &CreateInfo, nullptr, &shaderModule) != VK_SUCCESS)
+    if (vkCreateShaderModule(engine->device, &CreateInfo, nullptr, &shaderModule) != VK_SUCCESS)
     {
         throw std::runtime_error("failed to Create shader module!");
     }
@@ -158,12 +168,4 @@ std::vector<VkVertexInputAttributeDescription> CreateAttributeDescriptions(std::
     }
 
     return attributeDescriptions;
-}
-
-VkPipelineColorBlendAttachmentState CreateBlendAttachment()
-{
-    VkPipelineColorBlendAttachmentState colorBlendAttachment {};
-    colorBlendAttachment.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
-    colorBlendAttachment.blendEnable = VK_FALSE;
-    return colorBlendAttachment;
 }

@@ -1,3 +1,4 @@
+#pragma once
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
 #include <vector>
@@ -7,7 +8,7 @@
 #include "Engine.cpp"
 #include "SwapChain.cpp"
 
-VkRenderPass CreateRenderPass(Engine engine, SwapChain swapChain)
+VkRenderPass CreateRenderPass(Engine* engine, SwapChain swapChain)
 {
     VkAttachmentDescription colorAttachment{};
     colorAttachment.format = swapChain.format;
@@ -49,7 +50,7 @@ VkRenderPass CreateRenderPass(Engine engine, SwapChain swapChain)
 
     VkRenderPass renderPass;
 
-    if (vkCreateRenderPass(engine.device, &renderPassInfo, nullptr, &renderPass) != VK_SUCCESS)
+    if (vkCreateRenderPass(engine->device, &renderPassInfo, nullptr, &renderPass) != VK_SUCCESS)
     {
         throw std::runtime_error("failed to Create render pass!");
     }

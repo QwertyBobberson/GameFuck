@@ -34,8 +34,8 @@ int main(int argc, char** argv)
 
 	std::cout << -1 * sHeight << std::endl;
 
-	DrawSquare(0, 0, -0.5, 1, 1, 0, 0, 0);
-	DrawSquare(-0.5, -0.5, 0., 1, 1, 0, 0, 0);
+	DrawSquare( 0	,  -0.5, 	-0.5,  1, 1, 0, 0, 0);
+	DrawSquare(-0.5	, -0.5,  1.5,  1, 1, 0, 0, 0);
 
 	// for(int y = -sHeight; y < sHeight; y++)
 	// {
