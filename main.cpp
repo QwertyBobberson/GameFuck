@@ -1,115 +1,104 @@
-#include "Engine/src/Engine.cpp"
-#include <typeinfo>
-using namespace std;
 
+#define GLM_FORCE_RADIANS
+#define GLM_FORCE_DEFAULT_ALIGNED_GENTYPES
+#define GLM_FORCE_DEPTH_ZERO_TO_ONE
+#define STB_IMAGE_IMPLEMENTATION
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtx/string_cast.hpp>
+#include <glm/gtx/transform.hpp>
+#include <glm/gtx/matrix_operation.hpp>
 
-std::vector<Vertex> verts;
-std::vector<int> indices;
+#include "Engine/include/Engine.hpp"
+#include "Engine/include/SwapChain.hpp"
+#include "Engine/include/Camera.hpp"
+#include "Engine/include/Input.hpp"
+#include <math.h>
 
-void DrawSquare(double x, double y, double z, double width, double height, double r, double g, double b)
-{
-	int start = verts.size();
-	verts.push_back({{x			, y			, z}, {r, g, b}, {0.0f, 0.0f, 0.0f}});
-	verts.push_back({{x + width	, y			, z}, {r, g, b}, {1.0f, 0.0f, 0.0f}});
-	verts.push_back({{x			, y + height, z}, {r, g, b}, {0.0f, 1.0f, 0.0f}});
-	verts.push_back({{x + width	, y + height, z}, {r, g, b}, {1.0f, 1.0f, 0.0f}});
+Engine engine("New Engine Test", 1000, 500);
+SwapChain swapChain;
+Pipeline pipeline("shaders/vert.spv", "shaders/frag.spv");
+Transform cubeTransform {glm::mat4(1.0f), glm::mat4(1.0f), glm::mat4(1.0f)};
+Transform floorTransform {glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 10.0f, 0.0f)), glm::mat4(1.0f), glm::diagonal4x4(glm::vec4(100.0f, 0.0f, 100.0f, 1.0f))};
+RenderObject cube = RenderObject::CreateCube(cubeTransform, pipeline);
+RenderObject ground = RenderObject::CreateCube(floorTransform, pipeline, 1, 1, 1);
+Camera cam(pipeline);
 
-	indices.push_back(start + 0);
-	indices.push_back(start + 1);
-	indices.push_back(start + 2);
-	indices.push_back(start + 2);
-	indices.push_back(start + 3);
-	indices.push_back(start + 1);
-}
-
+void HandleInput();
 
 int main()
 {
-	DrawSquare(-0.5f, -0.5f, 0.0f, 1.0f, 1.0f, 0.0f, 0.0f, 1.0f);
-
-	Engine engine("New Engine Test", 500, 500, 1);
-	CommandPool cmdPool(&engine);
-	SwapChain swapChain = CreateSwapChain(&engine, cmdPool);
-	VkRenderPass renderPass = CreateRenderPass(swapChain);
-	Pipeline pipeline;
-
-	VkShaderModule vertShader = CreateShaderModuleFromFile(&engine, "shaders/vert.spv");
-	VkShaderModule fragShader = CreateShaderModuleFromFile(&engine, "shaders/frag.spv");
-
-	pipeline.shaders = {CreatePipelineShaderInfo(VK_SHADER_STAGE_VERTEX_BIT, vertShader), CreatePipelineShaderInfo(VK_SHADER_STAGE_FRAGMENT_BIT, fragShader)};
-	pipeline.inputAssembly = CreateInputCreateInfo();
-	CreateFramebuffers(swapChain, renderPass);
-	std::vector<VkVertexInputBindingDescription> binding = {CreateBindingDescription(sizeof(Vertex))};
-	std::vector<VkVertexInputAttributeDescription> attributes = CreateAttributeDescriptions({offsetof(Vertex, pos), offsetof(Vertex, col), offsetof(Vertex, texCoord)});
-
-	pipeline.vertexInput = CreateVertexInfo({binding}, attributes);
-
-	pipeline.rasterization = CreateRasterizationStateCreateInfo();
-	pipeline.renderPass = renderPass;
-	CreatePipeline(&engine, pipeline, swapChain);
-
-	VkCommandBufferBeginInfo beginInfo{};
-	beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-
-
-	if (vkBeginCommandBuffer(cmdPool.commandBuffers[0], &beginInfo) != VK_SUCCESS)
+	while(!glfwWindowShouldClose(engine.window))
 	{
-		throw std::runtime_error("failed to begin Recording command buffer!");
+	 	glfwPollEvents();
+		HandleInput();
+		cam.BeginDraw();
+		cam.DrawObject(cube);
+		cam.DrawObject(ground);
+		cam.EndDraw();
 	}
 
-	VkRenderPassBeginInfo renderPassInfo{};
-	renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-	renderPassInfo.renderPass = renderPass;
-	renderPassInfo.framebuffer = swapChain.frameBuffers[0];
-	renderPassInfo.renderArea.offset = {0, 0};
-	renderPassInfo.renderArea.extent = swapChain.extent;
+	return 0;
+}
 
-	std::array<VkClearValue, 2> clearValues{};
-	clearValues[0].color = {{0.0f, 0.0f, 0.0f, 1.0f}};
-	clearValues[1].depthStencil = {1.0f, 0};
+glm::vec2 prevMousePos;
+glm::vec2 camRotation = glm::vec2(0.0f, 0.0f);
 
-	renderPassInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());
-	renderPassInfo.pClearValues = clearValues.data();
+void HandleInput()
+{
+	if(prevMousePos == glm::vec2(0.0f, 0.0f))
+	{
+		prevMousePos = Input::mousePos;
+	}
+	glm::vec2 mouseMovement = Input::mousePos - prevMousePos;
 
-	VkBuffer vertBuffer;
-	VkDeviceMemory vertMem;
-	VkBuffer indBuffer;
-	VkDeviceMemory indMem;
-	VkDeviceSize offsets[1] = {0};
-	CreateVertexBuffer(cmdPool, sizeof(Vertex) * verts.size(), verts.data(), vertBuffer, vertMem);
-	CreateIndexBuffer(cmdPool, sizeof(int) * indices.size(), indices.data(), indBuffer, indMem);
+	cam.transform.pos *= glm::rotate(glm::mat4(1.0f), glm::radians(-camRotation.y), glm::vec3(1.0f, 0.0f, 0.0f));
 
-	vkCmdBeginRenderPass(cmdPool.commandBuffers[0], &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
-	vkCmdBindPipeline(cmdPool.commandBuffers[0], VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline.pipeline);
-	vkCmdBindVertexBuffers(cmdPool.commandBuffers[0], 0, 1, &vertBuffer, {offsets});
-	vkCmdBindIndexBuffer(cmdPool.commandBuffers[0], indBuffer, 0, VK_INDEX_TYPE_UINT32);
+	if(Input::keyboardState[GLFW_KEY_W])
+	{
+		cam.transform.pos = glm::translate(cam.transform.pos, glm::vec3(0.0f, 0.0f, -0.20f));
+	}
+	if(Input::keyboardState[GLFW_KEY_S])
+	{
+		cam.transform.pos = glm::translate(cam.transform.pos, glm::vec3(0.0f, 0.0f, 0.20f));
+	}
 
-	// Application app;
+	if(Input::keyboardState[GLFW_KEY_A])
+	{
+		cam.transform.pos = glm::translate(cam.transform.pos, glm::vec3(-0.20f, 0.0f, 0.0f));
+	}
+	if(Input::keyboardState[GLFW_KEY_D])
+	{
+		cam.transform.pos = glm::translate(cam.transform.pos, glm::vec3(0.20f, 0.0f, 0.0f));
+	}
 
-	// // DrawSquare(-0.5, -0.5, 1, 1, 0, 0, 1);
+	if(Input::keyboardState[GLFW_KEY_LEFT_SHIFT])
+	{
+		cam.transform.pos = glm::translate(cam.transform.pos, glm::vec3(0.0f, 0.20f, 0.0f));
+	}
+	if(Input::keyboardState[GLFW_KEY_SPACE])
+	{
+		cam.transform.pos = glm::translate(cam.transform.pos, glm::vec3(0.0f, -0.20f, 0.0f));
+	}
 
-	// PNG png = ReadPng("test2.png");
+	if(Input::keyboardState[GLFW_KEY_ESCAPE])
+	{
+		glfwSetInputMode(engine.window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+	}
+	else
+	{
+		glfwSetInputMode(engine.window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+	}
 
-	// std::cout << png.height << " " << png.width << std::endl;
+	cam.transform.pos *= glm::rotate(glm::mat4(1.0f), glm::radians(camRotation.x), glm::vec3(0.0f, 1.0f, 0.0f));
 
-	// int sHeight = HEIGHT;
-	// int sWidth = WIDTH;
+	camRotation += mouseMovement/5.0f;
 
-	// std::cout << -1 * sHeight << std::endl;
+	camRotation.x = fmod(camRotation.x, 360.0f);
+	camRotation.y = glm::clamp(camRotation.y, -85.0f, 85.0f);
 
-	// DrawSquare( 0	,  -0.5, 	-0.5,  1, 1, 0, 0, 0);
-	// DrawSquare(-0.5	, -0.5,  1.5,  1, 1, 0, 0, 0);
+	cam.transform.pos *= glm::rotate(glm::mat4(1.0f), glm::radians(-camRotation.x), glm::vec3(0.0f, 1.0f, 0.0f));
+	cam.transform.pos *= glm::rotate(glm::mat4(1.0f), glm::radians(camRotation.y), glm::vec3(1.0f, 0.0f, 0.0f));
 
-	// try
-	// {
-	// 	app.Run(verts, indices);
-	// }
-	// catch(const std::exception& e)
-	// {
-	// 	std::cerr << e.what() << '\n';
-	// 	return EXIT_FAILURE;
-	// }
-
-	// return EXIT_SUCCESS;
-
+	prevMousePos = Input::mousePos;
 }

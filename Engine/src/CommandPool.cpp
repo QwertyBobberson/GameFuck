@@ -1,8 +1,6 @@
-#pragma once
 #include "../include/CommandPool.hpp"
-#include "../include/Engine.hpp"
 
-CommandPool::CommandPool(Engine* _engine) : engine(_engine)
+CommandPool::CommandPool()
 {
 	CreateCommandPool();
 	CreateCommandBuffers();
@@ -10,7 +8,7 @@ CommandPool::CommandPool(Engine* _engine) : engine(_engine)
 
 void CommandPool::CreateCommandPool()
 {
-	QueueFamilyIndices queueFamilyIndices = FindQueueFamilies(engine->physicalDevice, engine->surface);
+	QueueFamilyIndices queueFamilyIndices = Device::FindQueueFamilies(Engine::engine->physicalDevice, Engine::engine->surface);
 
 	VkCommandPoolCreateInfo poolInfo{};
 	poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
@@ -18,7 +16,7 @@ void CommandPool::CreateCommandPool()
 	poolInfo.queueFamilyIndex = queueFamilyIndices.graphicsFamily.value();
 
 
-	if (vkCreateCommandPool(engine->device, &poolInfo, nullptr, &commandPool) != VK_SUCCESS)
+	if (vkCreateCommandPool(Engine::engine->device, &poolInfo, nullptr, &commandPool) != VK_SUCCESS)
 	{
 		throw std::runtime_error("failed to Create command pool!");
 	}
@@ -26,14 +24,14 @@ void CommandPool::CreateCommandPool()
 
 void CommandPool::CreateCommandBuffers()
 {
-	commandBuffers.resize(engine->MaxFramesInFlight);
+	commandBuffers.resize(Engine::engine->MaxFramesInFlight);
 	VkCommandBufferAllocateInfo allocInfo{};
 	allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
 	allocInfo.commandPool = commandPool;
 	allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-	allocInfo.commandBufferCount = (uint32_t)commandBuffers.size();
+	allocInfo.commandBufferCount = (unsigned int)commandBuffers.size();
 
-	if (vkAllocateCommandBuffers(engine->device, &allocInfo, commandBuffers.data()) != VK_SUCCESS)
+	if (vkAllocateCommandBuffers(Engine::engine->device, &allocInfo, commandBuffers.data()) != VK_SUCCESS)
 	{
 		throw std::runtime_error("failed to allocate command buffers!");
 	}
@@ -49,7 +47,7 @@ VkCommandBuffer CommandPool::BeginSingleTimeCommands()
 	allocInfo.commandBufferCount = 1;
 
 	VkCommandBuffer commandBuffer;
-	vkAllocateCommandBuffers(engine->device, &allocInfo, &commandBuffer);
+	vkAllocateCommandBuffers(Engine::engine->device, &allocInfo, &commandBuffer);
 
 	VkCommandBufferBeginInfo beginInfo{};
 	beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
@@ -68,8 +66,8 @@ void CommandPool::EndSingleTimeCommands(VkCommandBuffer commandBuffer)
 	submitInfo.commandBufferCount = 1;
 	submitInfo.pCommandBuffers = &commandBuffer;
 
-	vkQueueSubmit(engine->graphicsQueue, 1, &submitInfo, VK_NULL_HANDLE);
-	vkQueueWaitIdle(engine->graphicsQueue);
+	vkQueueSubmit(Engine::engine->graphicsQueue, 1, &submitInfo, VK_NULL_HANDLE);
+	vkQueueWaitIdle(Engine::engine->graphicsQueue);
 
-	vkFreeCommandBuffers(engine->device, commandPool, 1, &commandBuffer);
+	vkFreeCommandBuffers(Engine::engine->device, commandPool, 1, &commandBuffer);
 }

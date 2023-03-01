@@ -4,17 +4,14 @@
 #include <vector>
 #include <iostream>
 #include <stdio.h>
-#include <fstream>
-
-struct Engine;
+#include "Device.hpp"
 
 struct CommandPool
 {
-    Engine* engine;
     VkCommandPool commandPool;
 	std::vector<VkCommandBuffer> commandBuffers;
 
-    CommandPool(Engine* _engine);
+    CommandPool();
 
 	void CreateCommandPool();
 
@@ -24,4 +21,5 @@ struct CommandPool
 
 	void EndSingleTimeCommands(VkCommandBuffer commandBuffer);
 };
+
 #include "Engine.hpp"

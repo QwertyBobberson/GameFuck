@@ -1,0 +1,12 @@
+#!/bin/bash
+touch Engine/include/$1.hpp
+echo "#pragma once
+#define GLFW_INCLUDE_VULKAN
+#include <GLFW/glfw3.h>
+
+class $1
+{
+
+};" >> Engine/include/$1.hpp
+touch Engine/src/$1.cpp
+echo "#include \"../include/$1.hpp\"" >> Engine/src/$1.cpp
