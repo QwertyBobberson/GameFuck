@@ -19,7 +19,7 @@ layout(location = 1) in vec3 col;
 layout(location = 2) in vec2 texCoord;
 layout(location = 3) in vec3 normal;
 layout(location = 0) out vec3 fragColor;
-// layout(location = 1) out vec2 fragTexCoord;
+layout(location = 1) out vec2 fragTexCoord;
 
 void main()
 {
@@ -28,6 +28,7 @@ void main()
     vec3 viewspaceNormal = vec3(normalize(camera.view * model * vec4(normal, 1.0)));
     vec3 viewspacePosition = vec3(normalize(gl_Position));
     fragColor = col * dot(viewspaceNormal, viewspacePosition);
+    fragColor = vec3(texCoord, 1.0f);
     gl_Position = camera.projection * gl_Position;
-    //fragTexCoord = inTexCoord;
+    // fragTexCoord = texCoord;
 }

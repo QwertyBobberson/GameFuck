@@ -2,9 +2,6 @@
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
 #include "Image.hpp"
-#include "Engine.hpp"
-#include "CommandPool.hpp"
-#include "Device.hpp"
 
 class Buffer
 {

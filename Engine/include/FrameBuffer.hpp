@@ -7,7 +7,9 @@ class FrameBuffer
 {
 public:
     VkFramebuffer framebuffer;
-
     VkExtent2D extent;
-    FrameBuffer(Image* atachments, unsigned int attachmentCount, VkRenderPass renderPass, VkExtent2D extent);
+    Image image;
+
+    FrameBuffer(Image* atachments, unsigned int attachmentCount, VkExtent2D extent);
+    FrameBuffer(Image target);
 };

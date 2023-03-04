@@ -1,5 +1,9 @@
 #include "../include/Device.hpp"
 
+#include <stdio.h>
+#include <iostream>
+#include <set>
+
 VkPhysicalDevice Device::physicalDevice = NULL;
 
 VkFormat Device::FindSupportedFormat(const std::vector<VkFormat> candidates, VkImageTiling tiling, VkFormatFeatureFlags features)

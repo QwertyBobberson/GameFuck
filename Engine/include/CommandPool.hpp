@@ -2,9 +2,6 @@
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
 #include <vector>
-#include <iostream>
-#include <stdio.h>
-#include "Device.hpp"
 
 struct CommandPool
 {
@@ -21,5 +18,3 @@ struct CommandPool
 
 	void EndSingleTimeCommands(VkCommandBuffer commandBuffer);
 };
-
-#include "Engine.hpp"

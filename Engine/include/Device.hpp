@@ -3,9 +3,6 @@
 #include <GLFW/glfw3.h>
 
 #include <vector>
-#include <stdio.h>
-#include <iostream>
-#include <set>
 
 #include "HelperStructs.hpp"
 

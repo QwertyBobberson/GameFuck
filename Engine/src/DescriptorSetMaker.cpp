@@ -1,5 +1,8 @@
 #include "../include/DescriptorSetMaker.hpp"
+#include "../include/Engine.hpp"
 
+#include <iostream>
+#include <stdexcept>
 
 DescriptorSetMaker::DescriptorSetMaker()
 {
@@ -53,7 +56,7 @@ void DescriptorSetMaker::CreateDescriptorPool(int maxSets)
     {
         poolSizes.push_back(VkDescriptorPoolSize());
         poolSizes[i].type = layoutBindings[i].descriptorType;
-        poolSizes[i].descriptorCount = static_cast<unsigned int>(Engine::engine->MaxFramesInFlight);
+        poolSizes[i].descriptorCount = static_cast<unsigned int>(10);
     }
 
     VkDescriptorPoolCreateInfo poolInfo{};
@@ -71,6 +74,7 @@ void DescriptorSetMaker::CreateDescriptorPool(int maxSets)
 
 VkDescriptorSet DescriptorSetMaker::CreateDescriptorSet(std::vector<Descriptor> descriptors)
 {
+    std::cout << "Creating Descriptors {" << descriptors.size() << "}\n";
     std::vector<VkDescriptorSetLayout> layouts(Engine::engine->MaxFramesInFlight, layout);
 
     VkDescriptorSetAllocateInfo allocInfo{};

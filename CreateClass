@@ -1,9 +1,19 @@
 #!/bin/bash
+argc=$#
+argv=("$@")
+
 touch Engine/include/$1.hpp
 echo "#pragma once
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
+" >> Engine/include/$1.hpp
 
+for (( j=1; j<argc; j++ ))
+do
+    echo "#include \"${argv[j]}.hpp\"" >> Engine/include/$1.hpp
+done
+
+echo "
 class $1
 {
 

@@ -2,18 +2,13 @@
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
 #include <vector>
-#include <iostream>
-#include <stdio.h>
 
 #include "FrameBuffer.hpp"
-#include "Image.hpp"
-#include "Engine.hpp"
 
 struct SwapChain
 {
     static SwapChain* swapChain;
     VkSwapchainKHR swapchain;
-    VkRenderPass renderPass;
 
     std::vector<Image> swapChainImages;
     std::vector<FrameBuffer> frameBuffers;
@@ -29,7 +24,6 @@ struct SwapChain
     void CreateImages(unsigned int image);
     void CreateSyncObjects();
     void Create();
-    void CreateRenderPass();
     void CreateFramebuffers();
 
     void RecreateSwapchain();

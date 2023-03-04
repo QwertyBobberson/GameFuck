@@ -1,7 +1,17 @@
+#define GLFW_INCLUDE_VULKAN
+#include <GLFW/glfw3.h>
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+
 #include "../include/Camera.hpp"
+#include "../include/SwapChain.hpp"
+#include "../include/RenderPass.hpp"
+#include "../include/Engine.hpp"
 
+#include <array>
+#include <stdexcept>
 
-Camera::Camera(Pipeline pipeline, float fov, float nearPlane, float farPlane, float aspectRatio) : pipeline(pipeline)
+Camera::Camera(Pipeline pipeline, float fov, float nearPlane, float farPlane, float aspectRatio) : pipeline(pipeline), drawToSwapchain(true), numTargets(Engine::engine->MaxFramesInFlight), targets(SwapChain::swapChain->frameBuffers), currentFrame(0)
 {
     transform = Transform
     {
@@ -27,30 +37,49 @@ Camera::Camera(Pipeline pipeline, float fov, float nearPlane, float farPlane, fl
     }
 }
 
+
+void Camera::SetTarget(FrameBuffer target)
+{
+	SetTarget(std::vector<FrameBuffer>{target});
+}
+void Camera::SetTarget(std::vector<FrameBuffer> targets)
+{
+	drawToSwapchain = false;
+	this->targets = targets;
+}
+void Camera::UnsetTarget()
+{
+	drawToSwapchain = true;
+	targets.clear();
+	targets = SwapChain::swapChain->frameBuffers;
+	numTargets = Engine::engine->MaxFramesInFlight;
+}
+
 void Camera::BeginDraw()
 {
-    vkWaitForFences(Engine::engine->device, 1, &(SwapChain::swapChain->inFlightFences[SwapChain::swapChain->currentFrame]), VK_TRUE, UINT64_MAX);
-	vkAcquireNextImageKHR(Engine::engine->device, SwapChain::swapChain->swapchain, UINT64_MAX, SwapChain::swapChain->imageAvailableSemaphores[SwapChain::swapChain->currentFrame], NULL, &imageIndex);
-    viewProjection.view = glm::inverse(transform.pos * transform.rotation);
+	if(drawToSwapchain)
+	{
+		vkWaitForFences(Engine::engine->device, 1, &(SwapChain::swapChain->inFlightFences[currentFrame]), VK_TRUE, UINT64_MAX);
+		vkAcquireNextImageKHR(Engine::engine->device, SwapChain::swapChain->swapchain, UINT64_MAX, SwapChain::swapChain->imageAvailableSemaphores[currentFrame], NULL, &imageIndex);
+	}
+	vkResetFences(Engine::engine->device, 1, &(SwapChain::swapChain->inFlightFences[currentFrame]));
+	vkResetCommandBuffer(Engine::engine->cmdPool->commandBuffers[currentFrame], 0);
 
-    descriptorSets[SwapChain::swapChain->currentFrame].descriptors[0].data.buffer.CopyFromCPU((void*)&viewProjection, sizeof(ViewProjection));
-
-    vkResetFences(Engine::engine->device, 1, &(SwapChain::swapChain->inFlightFences[SwapChain::swapChain->currentFrame]));
-    vkResetCommandBuffer(Engine::engine->cmdPool->commandBuffers[SwapChain::swapChain->currentFrame], 0);
-
+	viewProjection.view = glm::inverse(transform.pos * transform.rotation);
+    descriptorSets[currentFrame].descriptors[0].data.buffer.CopyFromCPU((void*)&viewProjection, sizeof(ViewProjection));
 
 	VkCommandBufferBeginInfo beginInfo{};
 	beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
 
-	if (vkBeginCommandBuffer(Engine::engine->cmdPool->commandBuffers[SwapChain::swapChain->currentFrame], &beginInfo) != VK_SUCCESS)
+	if (vkBeginCommandBuffer(Engine::engine->cmdPool->commandBuffers[currentFrame], &beginInfo) != VK_SUCCESS)
 	{
 		throw std::runtime_error("failed to begin Recording command buffer!");
 	}
 
 	VkRenderPassBeginInfo renderPassInfo{};
 	renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-	renderPassInfo.renderPass = SwapChain::swapChain->renderPass;
-	renderPassInfo.framebuffer = SwapChain::swapChain->frameBuffers[imageIndex].framebuffer;
+	renderPassInfo.renderPass = drawToSwapchain ? RenderPass::swapChainRenderPass->renderpass : RenderPass::headlessRenderPass->renderpass;
+	renderPassInfo.framebuffer = targets[drawToSwapchain ? imageIndex : currentFrame].framebuffer;
 	renderPassInfo.renderArea.offset = {0, 0};
 	renderPassInfo.renderArea.extent = Engine::engine->extent;
 
@@ -62,25 +91,25 @@ void Camera::BeginDraw()
 	renderPassInfo.pClearValues = clearValues.data();
 
 
-	vkCmdBeginRenderPass(Engine::engine->cmdPool->commandBuffers[SwapChain::swapChain->currentFrame], &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
-    vkCmdBindDescriptorSets(Engine::engine->cmdPool->commandBuffers[SwapChain::swapChain->currentFrame], VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline.pipelineLayout, 0, 1, &descriptorSets[imageIndex].set, 0, nullptr);
+	vkCmdBeginRenderPass(Engine::engine->cmdPool->commandBuffers[currentFrame], &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
+    vkCmdBindDescriptorSets(Engine::engine->cmdPool->commandBuffers[currentFrame], VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline.pipelineLayout, 0, 1, &descriptorSets[currentFrame].set, 0, nullptr);
 }
 
 void Camera::DrawObject(RenderObject obj)
 {
 	VkDeviceSize offsets[1] = {0};
-    obj.descriptorSets[SwapChain::swapChain->currentFrame].descriptors[0].data.buffer.CopyFromCPU((void*)&obj.transform, sizeof(Transform));
-	vkCmdBindPipeline(Engine::engine->cmdPool->commandBuffers[SwapChain::swapChain->currentFrame], VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline.pipeline);
-	vkCmdBindVertexBuffers(Engine::engine->cmdPool->commandBuffers[SwapChain::swapChain->currentFrame], 0, 1, &obj.mesh.vertexBuffer.buffer, {offsets});
-	vkCmdBindIndexBuffer(Engine::engine->cmdPool->commandBuffers[SwapChain::swapChain->currentFrame], obj.mesh.indexBuffer.buffer, 0, VK_INDEX_TYPE_UINT32);
-    vkCmdBindDescriptorSets(Engine::engine->cmdPool->commandBuffers[SwapChain::swapChain->currentFrame], VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline.pipelineLayout, 1, 1, &obj.descriptorSets[SwapChain::swapChain->currentFrame].set, 0, nullptr);
-	vkCmdDrawIndexed(Engine::engine->cmdPool->commandBuffers[SwapChain::swapChain->currentFrame], static_cast<unsigned int>(obj.mesh.indexCount), 1, 0, 0, 0);
+    obj.descriptorSets[currentFrame].descriptors[0].data.buffer.CopyFromCPU((void*)&obj.transform, sizeof(Transform));
+	vkCmdBindPipeline(Engine::engine->cmdPool->commandBuffers[currentFrame], VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline.pipeline);
+	vkCmdBindVertexBuffers(Engine::engine->cmdPool->commandBuffers[currentFrame], 0, 1, &obj.mesh.vertexBuffer.buffer, {offsets});
+	vkCmdBindIndexBuffer(Engine::engine->cmdPool->commandBuffers[currentFrame], obj.mesh.indexBuffer.buffer, 0, VK_INDEX_TYPE_UINT32);
+    vkCmdBindDescriptorSets(Engine::engine->cmdPool->commandBuffers[currentFrame], VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline.pipelineLayout, 1, 1, &obj.descriptorSets[currentFrame].set, 0, nullptr);
+	vkCmdDrawIndexed(Engine::engine->cmdPool->commandBuffers[currentFrame], static_cast<unsigned int>(obj.mesh.indexCount), 1, 0, 0, 0);
 }
 
 void Camera::EndDraw()
 {
-	vkCmdEndRenderPass(Engine::engine->cmdPool->commandBuffers[SwapChain::swapChain->currentFrame]);
-	if (vkEndCommandBuffer(Engine::engine->cmdPool->commandBuffers[SwapChain::swapChain->currentFrame]) != VK_SUCCESS)
+	vkCmdEndRenderPass(Engine::engine->cmdPool->commandBuffers[currentFrame]);
+	if (vkEndCommandBuffer(Engine::engine->cmdPool->commandBuffers[currentFrame]) != VK_SUCCESS)
 	{
 		throw std::runtime_error("failed to Record command buffer!");
 	}
@@ -88,37 +117,51 @@ void Camera::EndDraw()
 	VkSubmitInfo submitInfo{};
 	submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
 
-    VkSemaphore waitSemaphores[] = {SwapChain::swapChain->imageAvailableSemaphores[SwapChain::swapChain->currentFrame]};
+    VkSemaphore waitSemaphores[] = {SwapChain::swapChain->imageAvailableSemaphores[currentFrame]};
     VkPipelineStageFlags waitStages[] = {VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
+    VkSemaphore signalSemaphores[] = {SwapChain::swapChain->renderFinishedSemaphores[currentFrame]};
 
-	submitInfo.waitSemaphoreCount = 1;
-	submitInfo.pWaitSemaphores = waitSemaphores;
-	submitInfo.pWaitDstStageMask = waitStages;
+	if(drawToSwapchain)
+	{
+		submitInfo.waitSemaphoreCount = 1;
+		submitInfo.pWaitSemaphores = waitSemaphores;
+		submitInfo.pWaitDstStageMask = waitStages;
+		submitInfo.signalSemaphoreCount = 1;
+		submitInfo.pSignalSemaphores = signalSemaphores;
+	}
+	else
+	{
+		submitInfo.waitSemaphoreCount = 0;
+		submitInfo.pWaitSemaphores = nullptr;
+		submitInfo.pWaitDstStageMask = nullptr;
+		submitInfo.signalSemaphoreCount = 0;
+		submitInfo.pSignalSemaphores = nullptr;
+	}
+
 	submitInfo.commandBufferCount = 1;
-	submitInfo.pCommandBuffers = &(Engine::engine->cmdPool->commandBuffers[SwapChain::swapChain->currentFrame]);
+	submitInfo.pCommandBuffers = &(Engine::engine->cmdPool->commandBuffers[currentFrame]);
 
-
-    VkSemaphore signalSemaphores[] = {SwapChain::swapChain->renderFinishedSemaphores[SwapChain::swapChain->currentFrame]};
-	submitInfo.signalSemaphoreCount = 1;
-    submitInfo.pSignalSemaphores = signalSemaphores;
-
-	if(vkQueueSubmit(Engine::engine->graphicsQueue, 1, &submitInfo, SwapChain::swapChain->inFlightFences[SwapChain::swapChain->currentFrame]) != VK_SUCCESS)
+	if(vkQueueSubmit(Engine::engine->graphicsQueue, 1, &submitInfo, SwapChain::swapChain->inFlightFences[currentFrame]) != VK_SUCCESS)
 	{
 		throw std::runtime_error("Failed to submit command buffer");
 	}
 
-	VkPresentInfoKHR presentInfo{};
-	presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
+	if(drawToSwapchain)
+	{
+		VkPresentInfoKHR presentInfo{};
+		presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
 
-	presentInfo.waitSemaphoreCount = 1;
-	presentInfo.pWaitSemaphores = signalSemaphores;
+		presentInfo.waitSemaphoreCount = 1;
+		presentInfo.pWaitSemaphores = signalSemaphores;
 
-	VkSwapchainKHR swapChains[] = {SwapChain::swapChain->swapchain};
-	presentInfo.swapchainCount = 1;
-	presentInfo.pSwapchains = swapChains;
+		VkSwapchainKHR swapChains[] = {SwapChain::swapChain->swapchain};
+		presentInfo.swapchainCount = 1;
+		presentInfo.pSwapchains = swapChains;
 
-	presentInfo.pImageIndices = &imageIndex;
+		presentInfo.pImageIndices = &(drawToSwapchain ? imageIndex : currentFrame);
 
-	vkQueuePresentKHR(Engine::engine->presentQueue, &presentInfo);
-    SwapChain::swapChain->currentFrame = (SwapChain::swapChain->currentFrame + 1) % Engine::engine->MaxFramesInFlight;
+		vkQueuePresentKHR(Engine::engine->presentQueue, &presentInfo);
+	}
+
+	currentFrame = (currentFrame + 1) % numTargets;
 }

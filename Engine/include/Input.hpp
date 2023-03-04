@@ -1,7 +1,6 @@
 #pragma once
-#define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
-#include <glm/glm.hpp>
+#include <glm/vec2.hpp>
 
 typedef bool Keyboard[348];
 typedef bool MouseButtons[8];

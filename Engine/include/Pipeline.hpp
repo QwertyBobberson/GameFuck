@@ -1,13 +1,9 @@
 #pragma once
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
-#include <vector>
-#include <iostream>
-#include <stdio.h>
-#include <fstream>
-#include "Engine.hpp"
-#include "SwapChain.hpp"
+#include <string>
 #include "DescriptorSetMaker.hpp"
+
 
 struct Pipeline
 {

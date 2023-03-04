@@ -1,4 +1,13 @@
 #include "../include/Engine.hpp"
+#include "../include/Device.hpp"
+#include "../include/Input.hpp"
+
+#include <iostream>
+#include <stdexcept>
+#include <algorithm>
+#include <vector>
+#include <cstring>
+#include <set>
 
 Engine* Engine::engine = nullptr;
 
@@ -301,7 +310,7 @@ void Engine::FramebufferResizeCallback(GLFWwindow* window, int width, int height
         glfwWaitEvents();
     }
     vkDeviceWaitIdle(Engine::engine->device);
-    Engine::engine->extent = {(unsigned int)width, (unsigned int)height};
+	glfwSetWindowSize(window, engine->extent.width, engine->extent.height);
 }
 
 VKAPI_ATTR VkBool32 VKAPI_CALL DebugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity, VkDebugUtilsMessageTypeFlagsEXT messageType, const VkDebugUtilsMessengerCallbackDataEXT *pCallbackData, void *pUserData)

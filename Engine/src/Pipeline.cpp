@@ -1,4 +1,10 @@
 #include "../include/Pipeline.hpp"
+#include "../include/Engine.hpp"
+#include "../include/RenderPass.hpp"
+
+#include <vector>
+#include <iostream>
+#include <fstream>
 
 Pipeline::Pipeline(std::string vertexShaderFile, std::string fragmentShaderFile)
 {
@@ -6,7 +12,7 @@ Pipeline::Pipeline(std::string vertexShaderFile, std::string fragmentShaderFile)
     inputAssembly = CreateInputCreateInfo();
 
     std::vector<VkVertexInputBindingDescription> binding = {CreateBindingDescription(sizeof(Vertex))};
-	std::vector<VkVertexInputAttributeDescription> attributes = CreateAttributeDescriptions({offsetof(Vertex, pos), offsetof(Vertex, col), offsetof(Vertex, uv), offsetof(Vertex, normal)}, {sizeof(glm::vec3), sizeof(glm::vec3), sizeof(glm::vec2), sizeof(glm::vec3)});
+	std::vector<VkVertexInputAttributeDescription> attributes = CreateAttributeDescriptions({offsetof(Vertex, pos), offsetof(Vertex, col), offsetof(Vertex, uv), offsetof(Vertex, normal)}, {sizeof(glm::vec3), sizeof(glm::vec3), sizeof(glm::vec2), sizeof(glm::vec3)}, 0);
 	vertexInput = CreateVertexInfo({binding}, attributes);
 
 	VkShaderModule vertShader = CreateShaderModuleFromFile(vertexShaderFile);
@@ -39,7 +45,7 @@ void Pipeline::CreateCameraDescriptorSetLayout()
     DescriptorSetMaker cameraSetMaker;
     cameraSetMaker.CreateLayoutBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT);
     cameraSetMaker.CreateDescriptorSetLayout();
-    cameraSetMaker.CreateDescriptorPool(3);
+    cameraSetMaker.CreateDescriptorPool(1000);
 
     descriptorSetLayouts.push_back(cameraSetMaker.layout);
     setMakers.push_back(cameraSetMaker);
@@ -49,6 +55,7 @@ void Pipeline::CreateObjectDescriptorSetLayout()
 {
     DescriptorSetMaker objectSetMaker;
     objectSetMaker.CreateLayoutBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT);
+    objectSetMaker.CreateLayoutBinding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT);
     objectSetMaker.CreateDescriptorSetLayout();
     objectSetMaker.CreateDescriptorPool(1000);
 
@@ -130,7 +137,7 @@ void Pipeline::CreatePipeline()
     pipelineInfo.pColorBlendState = &colorBlending;
     pipelineInfo.pDepthStencilState = &depthStencil;
     pipelineInfo.layout = pipelineLayout;
-    pipelineInfo.renderPass = SwapChain::swapChain->renderPass;
+    pipelineInfo.renderPass = RenderPass::swapChainRenderPass->renderpass;
     pipelineInfo.subpass = 0;
     pipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
 

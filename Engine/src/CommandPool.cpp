@@ -1,4 +1,8 @@
 #include "../include/CommandPool.hpp"
+#include "../include/Device.hpp"
+#include "../include/Engine.hpp"
+#include <iostream>
+#include <stdio.h>
 
 CommandPool::CommandPool()
 {

@@ -1,8 +1,7 @@
 #pragma once
-#define GLFW_INCLUDE_VULKAN
-#include <GLFW/glfw3.h>
 
 #include "Buffer.hpp"
+#include "HelperStructs.hpp"
 #include <vector>
 
 class Mesh

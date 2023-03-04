@@ -40,14 +40,14 @@ Mesh Mesh::CreateCube(double r, double g, double b)
     {
         for(int i = 0; i < 8; i++)
         {
-            vertices.push_back({{corner + glm::vec3(i & 1, i >> 1 & 1, i >> 2 & 1)}, {r, g, b}, {0.0f, 0.0f}, {0.0f, 0.0f, 0.0f}});
+            vertices.push_back({{corner + glm::vec3(i & 1, i >> 1 & 1, i >> 2 & 1)}, {r, g, b}, {i & 1, i >> 1 & 1}, {0.0f, 0.0f, 0.0f}});
         }
     }
     else
     {
         for(int i = 0; i < 8; i++)
         {
-            vertices.push_back({{corner + glm::vec3(i & 1, i >> 1 & 1, i >> 2 & 1)}, {i & 1, i >> 1 & 1, i >> 2 & 1}, {0.0f, 0.0f}, {0.0f, 0.0f, 0.0f}});
+            vertices.push_back({{corner + glm::vec3(i & 1, i >> 1 & 1, i >> 2 & 1)}, {i & 1, i >> 1 & 1, i >> 2 & 1}, {i & 1, i >> 1 & 1}, {0.0f, 0.0f, 0.0f}});
         }
     }
 

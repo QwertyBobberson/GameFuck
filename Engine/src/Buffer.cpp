@@ -1,5 +1,11 @@
 
 #include "../include/Buffer.hpp"
+#include "../include/Engine.hpp"
+#include "../include/Device.hpp"
+#include "../include/CommandPool.hpp"
+
+#include <stdexcept>
+#include <cstring>
 
 Buffer::Buffer() {}
 

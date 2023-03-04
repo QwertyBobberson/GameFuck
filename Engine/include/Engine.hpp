@@ -8,28 +8,10 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include <glm/glm.hpp>
 
-#include <iostream>
-#include <fstream>
-#include <stdio.h>
-#include <iomanip>
-
-#include <chrono>
-#include <stdexcept>
-#include <cstdlib>
-#include <cstdint>
-#include <algorithm>
-
 #include <vector>
-#include <cstring>
-#include <limits>
-#include <optional>
-#include <set>
-#include <array>
 
 #include "CommandPool.hpp"
-#include "Device.hpp"
 #include "HelperStructs.hpp"
-#include "Input.hpp"
 
 struct Engine
 {
