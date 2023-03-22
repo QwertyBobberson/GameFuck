@@ -1,7 +1,7 @@
-# WheelEngine
+# StarEngine
 A custom game development framework written in Vulkan
 
-This is the render engine component of a game development stack I am working on called WheelEngine.
+This is the render engine component of a game development stack I am working on called StarEngine.
 
 Currently, this framework supports 
   Drawing multiple objects individually
